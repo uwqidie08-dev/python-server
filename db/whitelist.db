@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS whitelist (
+    user_id INTEGER,
+    role TEXT,
+    PRIMARY KEY (user_id, role)
+);
