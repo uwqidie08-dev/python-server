@@ -65,10 +65,41 @@ from features.admin.timeout import (
 # =========================
 # 管理员：数据库重置
 # =========================
-from features.admin.reset_db import (  # 新增
+from features.admin.reset_db import (
     reset_score_db,
     confirm_reset_score_db,
 )
+
+
+# ==================================================
+# 帮助命令（新增，不影响原有业务逻辑）
+# ==================================================
+async def show_help(update, context):
+    """
+    /start 和 /help 使用说明
+    """
+    if not update.message:
+        return
+
+    await update.message.reply_text(
+        "📌 支持格式：\n"
+        "• 单行 8-13 位数字 → 查询\n"
+        "• 两行内容 → 数据提交\n"
+        "• 123 <数据> → 定位历史记录\n"
+        "• 1 → 确认重复提交（仅当有等待确认时）\n\n"
+        "🔧 常用命令：\n"
+        "• /help → 查看说明\n"
+        "• /start → 查看说明\n"
+        "• /stats → 使用说明\n\n"
+        "👑 管理员命令：\n"
+        "• /report → 用户统计报告\n"
+        "• /clear_today → 清空今日数据\n"
+        "• /reset_score_db → 重置评分数据库\n"
+        "• /wl_list → 查看白名单\n"
+        "• /score_list → 查看评分白名单\n"
+        "• /timeout_status → 查看超时状态\n"
+        "• /list_pending → 查看待确认消息"
+    )
 
 
 # ==================================================
@@ -115,7 +146,8 @@ async def private_message_router(update, context):
         "• 单行 8-13 位数字 → 查询\n"
         "• 两行内容 → 数据提交\n"
         "• 123 <数据> → 定位历史记录\n"
-        "• 1 → 确认重复提交（仅当有等待确认时）"
+        "• 1 → 确认重复提交（仅当有等待确认时）\n\n"
+        "💡 发送 /help 查看完整说明"
     )
 
 
@@ -131,19 +163,23 @@ def register_routes(app: Application):
     # ==================================================
     # 一、命令处理器（CommandHandler）
     # ==================================================
-    
+
+    # 帮助命令（新增）
+    app.add_handler(CommandHandler("start", show_help))
+    app.add_handler(CommandHandler("help", show_help))
+
     # 管理员命令
     app.add_handler(CommandHandler("report", report_today))  # 用户统计报告
     app.add_handler(CommandHandler("clear_today", clear_today))
     app.add_handler(CommandHandler("confirm_clear_today", confirm_clear_today))
-    
+
     # 数据库重置命令
     app.add_handler(CommandHandler("reset_score_db", reset_score_db))
     app.add_handler(CommandHandler("confirm_reset_score_db", confirm_reset_score_db))
-    
+
     # 使用说明命令（所有白名单用户可用）
     app.add_handler(CommandHandler("stats", handle_stats))
-    
+
     # 数据库调试命令
     app.add_handler(CommandHandler("debug_db", debug_db))
 
@@ -154,7 +190,7 @@ def register_routes(app: Application):
     app.add_handler(CommandHandler("score_add", score_add))
     app.add_handler(CommandHandler("score_remove", score_remove))
     app.add_handler(CommandHandler("score_list", score_list))
-    
+
     # 超时管理命令
     app.add_handler(CommandHandler("timeout_status", check_timeout_status))
     app.add_handler(CommandHandler("force_check_timeout", force_check_timeout))
@@ -164,7 +200,7 @@ def register_routes(app: Application):
     # ==================================================
     # 二、消息处理器（MessageHandler）
     # ==================================================
-    
+
     # TXT 文件上传
     app.add_handler(
         MessageHandler(
@@ -194,8 +230,8 @@ def register_routes(app: Application):
     # 单独的"1"确认命令（必须在private_message_router之前注册）
     app.add_handler(
         MessageHandler(
-            filters.ChatType.PRIVATE 
-            & filters.TEXT 
+            filters.ChatType.PRIVATE
+            & filters.TEXT
             & filters.Regex(r'^1$'),  # 仅匹配单独的"1"
             handle_submit_message
         )
@@ -204,8 +240,8 @@ def register_routes(app: Application):
     # 私聊消息智能分流（不包括命令和单独的"1"）
     app.add_handler(
         MessageHandler(
-            filters.ChatType.PRIVATE 
-            & filters.TEXT 
+            filters.ChatType.PRIVATE
+            & filters.TEXT
             & ~filters.COMMAND  # 排除命令
             & ~filters.Regex(r'^1$'),  # 排除单独的"1"
             private_message_router
