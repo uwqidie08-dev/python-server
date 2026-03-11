@@ -2,6 +2,7 @@ import sqlite3
 import logging
 import os
 import json
+import threading
 from datetime import datetime, date
 from typing import List, Dict, Optional, Tuple, Any
 from contextlib import contextmanager
@@ -11,6 +12,9 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 DB_PATH = settings.SCORE_DB
+
+# 新增：数据库写锁（防止并发写入冲突）
+DB_WRITE_LOCK = threading.Lock()
 
 
 # ==========================================================
@@ -32,7 +36,11 @@ def _get_conn():
         )
         conn.execute("PRAGMA journal_mode=WAL")  # 使用WAL模式提高并发性能
         conn.execute("PRAGMA synchronous=NORMAL")  # 降低同步级别
-        yield conn
+        
+        # 新增：数据库写锁
+        with DB_WRITE_LOCK:
+            yield conn
+
     except sqlite3.OperationalError as e:
         logger.error(f"数据库连接错误: {e}")
         raise
