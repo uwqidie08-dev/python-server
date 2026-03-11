@@ -230,6 +230,7 @@ def main() -> None:
             "callback_query",
         ],
         drop_pending_updates=True,
+        close_loop=False,
     )
 
 
