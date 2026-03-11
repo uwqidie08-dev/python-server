@@ -6,6 +6,7 @@ import os
 import sqlite3
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -235,4 +236,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except Exception:
+            logger.exception("❌ Bot 运行异常，5秒后自动重启...")
+            time.sleep(5)
