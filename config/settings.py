@@ -37,6 +37,9 @@ class Settings:
         int(x) for x in os.getenv("ADMINS", "").split(",") if x.strip()
     ]
 
+    # ✅ 新增日志（用于确认 Render 是否读取到管理员）
+    logger.info(f"ADMINS loaded: {ADMINS}")
+
     # ==================================================
     # 行为控制
     # ==================================================
