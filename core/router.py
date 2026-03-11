@@ -52,6 +52,12 @@ from features.admin.score_whitelist import (
     score_list,
 )
 
+from features.admin.admin_manage import (
+    admin_add,
+    admin_remove,
+    admin_list,
+)
+
 # =========================
 # 管理员：超时管理
 # =========================
@@ -132,6 +138,11 @@ async def show_help(update, context):
 /score_add
 /score_remove
 /score_list
+
+👑 管理员管理：
+/admin_add
+/admin_remove
+/admin_list
 """,
         parse_mode=None
     )
@@ -214,6 +225,11 @@ def register_routes(app: Application):
     app.add_handler(CommandHandler("score_add", score_add))
     app.add_handler(CommandHandler("score_remove", score_remove))
     app.add_handler(CommandHandler("score_list", score_list))
+
+    # 管理员管理
+    app.add_handler(CommandHandler("admin_add", admin_add))
+    app.add_handler(CommandHandler("admin_remove", admin_remove))
+    app.add_handler(CommandHandler("admin_list", admin_list))
 
     # 超时管理
     app.add_handler(CommandHandler("timeout_status", check_timeout_status))
