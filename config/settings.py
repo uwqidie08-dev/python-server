@@ -37,7 +37,7 @@ class Settings:
         int(x) for x in os.getenv("ADMINS", "").split(",") if x.strip()
     ]
 
-    # ✅ 新增日志（用于确认 Render 是否读取到管理员）
+    # ✅ 日志：用于确认 Render 是否读取到管理员
     logger.info(f"ADMINS loaded: {ADMINS}")
 
     # ==================================================
@@ -51,8 +51,8 @@ class Settings:
     # ==================================================
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # ✅ 改为 Render Persistent Disk 挂载路径
-    DATA_DIR = "/data"
+    # ✅ 免费版 Render 用项目目录下的 data
+    DATA_DIR = os.path.join(BASE_DIR, "data")
     os.makedirs(DATA_DIR, exist_ok=True)
 
     # ==================================================
