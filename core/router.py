@@ -29,30 +29,30 @@ from features.score.handler import handle_score_reply
 # =========================
 # 管理员：统计 / 清空 / 说明
 # =========================
-from features.report import report_today
-from features.clear_today import (
+from features.admin.report import report_today
+from features.admin.clear_today import (
     clear_today,
     confirm_clear_today,
 )
-from features.stats import handle_stats
+from features.admin.stats import handle_stats
 
 # =========================
 # 管理员：权限管理
 # =========================
-from features.whitelist import (
+from features.admin.whitelist import (
     wl_add,
     wl_remove,
     wl_list,
     debug_db,
 )
 
-from features.score_whitelist import (
+from features.admin.score_whitelist import (
     score_add,
     score_remove,
     score_list,
 )
 
-from features.admin_manage import (
+from features.admin.admin_manage import (
     admin_add,
     admin_remove,
     admin_list,
@@ -61,7 +61,7 @@ from features.admin_manage import (
 # =========================
 # 管理员：超时管理
 # =========================
-from features.timeout import (
+from features.admin.timeout import (
     check_timeout_status,
     force_check_timeout,
     clear_timeout_cache,
@@ -72,7 +72,7 @@ from features.timeout import (
 # =========================
 # 管理员：数据库重置
 # =========================
-from features.reset_db import (
+from features.admin.reset_db import (
     reset_score_db,
     confirm_reset_score_db,
 )
@@ -196,6 +196,7 @@ async def private_message_router(update, context):
 # 路由注册入口
 # ==================================================
 def register_routes(app: Application):
+
     # 帮助命令
     app.add_handler(CommandHandler("start", show_help))
     app.add_handler(CommandHandler("help", show_help))
