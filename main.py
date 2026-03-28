@@ -225,15 +225,18 @@ def main() -> None:
 
     register_routes(application)
 
-    application.run_polling(
-        allowed_updates=[
-            "message",
-            "edited_message",
-            "callback_query",
-        ],
-        drop_pending_updates=True,
-        close_loop=False,
-    )
+# 👇 加这个（解决冲突）
+asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
+
+application.run_polling(
+    allowed_updates=[
+        "message",
+        "edited_message",
+        "callback_query",
+    ],
+    drop_pending_updates=True,
+    close_loop=False,
+)
 
 
 if __name__ == "__main__":
