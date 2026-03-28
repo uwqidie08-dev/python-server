@@ -190,6 +190,7 @@ async def on_shutdown(application: Application):
 def main() -> None:
 
     logger.info("🚀 Bot 正在启动...")
+    logger.info(f"ADMINS loaded: {settings.ADMINS}")
 
     start_healthcheck_server()
 
