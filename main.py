@@ -18,7 +18,7 @@ from config.settings import settings
 from db.score_db import init_score_tables
 from db.whitelist_db import init_whitelist_tables
 from db.submit_db import init_submit_tables
-from db.phone_db import phone_db  # 确保 phone_db 初始化
+from db.phone_db import phone_db
 
 # 路由注册
 from core.router import register_routes
@@ -39,8 +39,11 @@ logger = logging.getLogger(__name__)
 
 
 # ==========================================================
-# Render 健康检查 HTTP 服务
+# Render 健康检查 HTTP 服务（修复重复启动）
 # ==========================================================
+
+_health_started = False
+
 
 class _HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -58,28 +61,32 @@ class _HealthHandler(BaseHTTPRequestHandler):
 
 
 def start_healthcheck_server():
+    global _health_started
+
+    if _health_started:
+        return
+
     port_str = os.environ.get("PORT")
     if not port_str:
-        logger.info("ℹ️ 未检测到 PORT 环境变量，跳过健康检查服务（本地运行正常）")
-        return None
+        logger.info("ℹ️ 未检测到 PORT，跳过健康检查（本地正常）")
+        return
 
     try:
         port = int(port_str)
     except ValueError:
-        logger.warning(f"⚠️ PORT 环境变量无效: {port_str}")
-        return None
+        logger.warning(f"⚠️ PORT 无效: {port_str}")
+        return
 
     def _run():
         try:
             server = HTTPServer(("0.0.0.0", port), _HealthHandler)
-            logger.info(f"🌐 健康检查服务已启动: 0.0.0.0:{port}")
+            logger.info(f"🌐 健康检查启动: {port}")
             server.serve_forever()
         except Exception as e:
-            logger.exception(f"❌ 健康检查服务启动失败: {e}")
+            logger.warning(f"⚠️ 健康检查端口占用（忽略）: {e}")
 
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-    return thread
+    threading.Thread(target=_run, daemon=True).start()
+    _health_started = True
 
 
 # ==========================================================
@@ -110,13 +117,12 @@ def init_group_records_tables():
                     """)
                     logger.info(f"✅ 创建 records 表: {db_path}")
                 else:
-                    logger.info(f"🔍 检查 records 表结构: {db_path}")
+                    logger.info(f"🔍 records 已存在: {db_path}")
 
                 conn.commit()
-                logger.info(f"✅ records 表处理完成: {db_path}")
 
         except Exception as e:
-            logger.error(f"❌ 处理 records 表失败 {db_path}: {e}")
+            logger.error(f"❌ records 初始化失败 {db_path}: {e}")
 
 
 # ==========================================================
@@ -139,10 +145,10 @@ def cleanup_old_force_stats():
 
                 if backup_date < today:
                     os.remove(backup_file)
-                    logger.info(f"🗑️ 删除旧的强制统计备份: {backup_date_str}")
+                    logger.info(f"🗑️ 删除旧备份: {backup_date_str}")
 
         except Exception as e:
-            logger.error(f"❌ 清理强制统计备份失败: {e}")
+            logger.error(f"❌ 清理备份失败: {e}")
 
 
 # ==========================================================
@@ -153,34 +159,35 @@ async def periodic_cleanup(application: Application):
     while True:
         try:
             await asyncio.sleep(6 * 60 * 60)
-
             cleaned = reminder_manager["cleanup_old_records"](hours=24)
 
             if cleaned > 0:
-                logger.info(f"🧹 定期清理完成: 清理了 {cleaned} 条旧记录")
+                logger.info(f"🧹 清理 {cleaned} 条旧记录")
 
         except asyncio.CancelledError:
-            logger.info("🛑 定时清理任务已取消")
             break
         except Exception as e:
-            logger.error(f"❌ 定时清理失败: {e}")
+            logger.error(f"❌ 清理失败: {e}")
 
 
 async def on_startup(application: Application):
+    # ✅ 正确位置（关键修复）
+    await application.bot.delete_webhook(drop_pending_updates=True)
+    logger.info("✅ webhook 已清理")
+
     cleanup_task = asyncio.create_task(periodic_cleanup(application))
     application.bot_data["_cleanup_task"] = cleanup_task
-    logger.info("✅ 定时清理任务已启动")
+    logger.info("✅ 定时任务已启动")
 
 
 async def on_shutdown(application: Application):
-    cleanup_task = application.bot_data.get("_cleanup_task")
-    if cleanup_task and not cleanup_task.done():
-        cleanup_task.cancel()
+    task = application.bot_data.get("_cleanup_task")
+    if task and not task.done():
+        task.cancel()
         try:
-            await cleanup_task
+            await task
         except asyncio.CancelledError:
             pass
-        logger.info("✅ 定时清理任务已停止")
 
 
 # ==========================================================
@@ -189,14 +196,13 @@ async def on_shutdown(application: Application):
 
 def main() -> None:
 
-    logger.info("🚀 Bot 正在启动...")
-    logger.info(f"ADMINS loaded: {settings.ADMINS}")
+    logger.info("🚀 Bot 启动...")
+    logger.info(f"ADMINS: {settings.ADMINS}")
 
     start_healthcheck_server()
 
     try:
-        data_dir = Path("data")
-        data_dir.mkdir(exist_ok=True)
+        Path("data").mkdir(exist_ok=True)
 
         cleanup_old_force_stats()
 
@@ -211,10 +217,6 @@ def main() -> None:
         logger.exception("❌ 数据库初始化失败")
         sys.exit(1)
 
-    if not settings.BOT_TOKEN:
-        logger.error("❌ BOT_TOKEN 未配置")
-        sys.exit(1)
-
     application = (
         Application.builder()
         .token(settings.BOT_TOKEN)
@@ -225,15 +227,8 @@ def main() -> None:
 
     register_routes(application)
 
-    # 👇 修复冲突（必须在 main 里面）
-    asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
-
     application.run_polling(
-        allowed_updates=[
-            "message",
-            "edited_message",
-            "callback_query",
-        ],
+        allowed_updates=["message", "edited_message", "callback_query"],
         drop_pending_updates=True,
         close_loop=False,
     )
@@ -244,5 +239,5 @@ if __name__ == "__main__":
         try:
             main()
         except Exception:
-            logger.exception("❌ Bot 运行异常，5秒后自动重启...")
+            logger.exception("❌ 崩溃，5秒重启...")
             time.sleep(5)
