@@ -19,7 +19,7 @@ class Settings:
     # ==================================================
     # Telegram Bot
     # ==================================================
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN")
+    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "").strip()
     if not BOT_TOKEN:
         logger.error("❌ BOT_TOKEN 未设置，请在 .env 文件中配置")
         sys.exit(1)
@@ -27,14 +27,14 @@ class Settings:
     # ==================================================
     # 群组配置
     # ==================================================
-    GROUP_ONE_ID: int = int(os.getenv("GROUP_ONE_ID", "0"))
-    GROUP_TWO_ID: int = int(os.getenv("GROUP_TWO_ID", "0"))
+    GROUP_ONE_ID: int = int(os.getenv("GROUP_ONE_ID", "0").strip())
+    GROUP_TWO_ID: int = int(os.getenv("GROUP_TWO_ID", "0").strip())
 
     # ==================================================
     # 管理员
     # ==================================================
     ADMINS: list[int] = [
-        int(x) for x in os.getenv("ADMINS", "").split(",") if x.strip()
+        int(x.strip()) for x in os.getenv("ADMINS", "").split(",") if x.strip()
     ]
 
     # ✅ 日志：用于确认 Render 是否读取到管理员
