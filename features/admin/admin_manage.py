@@ -1,92 +1,94 @@
-ADMIN_IDS = set()
+from telegram import Update
+from telegram.ext import ContextTypes
+
+from config.settings import settings
 
 
-def is_super_admin(user_id: int) -> bool:
-    """
-    超级管理员判断
-    这里先写死，后续你可以改成数据库读取
-    """
-    SUPER_ADMIN_IDS = {
-        123456789,  # 改成你自己的 Telegram 用户ID
-    }
-    return user_id in SUPER_ADMIN_IDS
+# =========================
+# 权限检查
+# =========================
+def is_admin(user_id: int) -> bool:
+    return user_id in settings.ADMINS
 
 
-async def admin_add(update, context):
-    """
-    /admin_add <user_id>
-    添加管理员
-    """
-    if not update.message or not update.effective_user:
-        return
+# =========================
+# /admin_add
+# =========================
+async def admin_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-    if not is_super_admin(update.effective_user.id):
+    print("===== ADMIN DEBUG =====")
+    print("user_id =", user_id)
+    print("ADMINS =", settings.ADMINS)
+    print("=======================")
+
+    if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
         return
 
     if not context.args:
-        await update.message.reply_text("用法：/admin_add <user_id>")
+        await update.message.reply_text("❌ 用法：/admin_add 用户ID")
         return
 
     try:
-        target_id = int(context.args[0])
+        new_admin = int(context.args[0])
     except ValueError:
-        await update.message.reply_text("❌ user_id 必须是数字")
+        await update.message.reply_text("❌ 用户ID必须是数字")
         return
 
-    if target_id in ADMIN_IDS:
-        await update.message.reply_text(f"⚠️ 管理员 {target_id} 已存在")
+    if new_admin in settings.ADMINS:
+        await update.message.reply_text("⚠️ 该用户已经是管理员")
         return
 
-    ADMIN_IDS.add(target_id)
-    await update.message.reply_text(f"✅ 已添加管理员：{target_id}")
+    settings.ADMINS.append(new_admin)
+
+    await update.message.reply_text(f"✅ 已添加管理员：{new_admin}")
 
 
-async def admin_remove(update, context):
-    """
-    /admin_remove <user_id>
-    删除管理员
-    """
-    if not update.message or not update.effective_user:
-        return
+# =========================
+# /admin_remove
+# =========================
+async def admin_remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-    if not is_super_admin(update.effective_user.id):
+    if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
         return
 
     if not context.args:
-        await update.message.reply_text("用法：/admin_remove <user_id>")
+        await update.message.reply_text("❌ 用法：/admin_remove 用户ID")
         return
 
     try:
-        target_id = int(context.args[0])
+        remove_admin = int(context.args[0])
     except ValueError:
-        await update.message.reply_text("❌ user_id 必须是数字")
+        await update.message.reply_text("❌ 用户ID必须是数字")
         return
 
-    if target_id not in ADMIN_IDS:
-        await update.message.reply_text(f"⚠️ 管理员 {target_id} 不存在")
+    if remove_admin not in settings.ADMINS:
+        await update.message.reply_text("⚠️ 该用户不是管理员")
         return
 
-    ADMIN_IDS.remove(target_id)
-    await update.message.reply_text(f"✅ 已移除管理员：{target_id}")
+    settings.ADMINS.remove(remove_admin)
+
+    await update.message.reply_text(f"✅ 已移除管理员：{remove_admin}")
 
 
-async def admin_list(update, context):
-    """
-    /admin_list
-    查看管理员列表
-    """
-    if not update.message or not update.effective_user:
-        return
+# =========================
+# /admin_list
+# =========================
+async def admin_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-    if not is_super_admin(update.effective_user.id):
+    print("===== ADMIN DEBUG =====")
+    print("user_id =", user_id)
+    print("ADMINS =", settings.ADMINS)
+    print("=======================")
+
+    if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
         return
 
-    if not ADMIN_IDS:
-        await update.message.reply_text("📭 当前没有管理员")
-        return
+    admin_list_str = "\n".join(str(a) for a in settings.ADMINS)
 
-    text = "\n".join(str(x) for x in sorted(ADMIN_IDS))
-    await update.message.reply_text(f"👑 当前管理员列表：\n{text}")
+    await update.message.reply_text(f"👑 当前管理员列表：\n{admin_list_str}")
