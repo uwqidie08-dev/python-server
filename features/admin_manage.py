@@ -17,6 +17,12 @@ def is_admin(user_id: int) -> bool:
 async def admin_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
+    # ✅ 调试日志（关键）
+    print("===== ADMIN DEBUG =====")
+    print("user_id =", user_id)
+    print("ADMINS =", settings.ADMINS)
+    print("=======================")
+
     if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
         return
@@ -45,6 +51,12 @@ async def admin_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # =========================
 async def admin_remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+
+    # ✅ 调试日志
+    print("===== ADMIN DEBUG =====")
+    print("user_id =", user_id)
+    print("ADMINS =", settings.ADMINS)
+    print("=======================")
 
     if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
@@ -75,6 +87,12 @@ async def admin_remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
+    # ✅ 调试日志
+    print("===== ADMIN DEBUG =====")
+    print("user_id =", user_id)
+    print("ADMINS =", settings.ADMINS)
+    print("=======================")
+
     if not is_admin(user_id):
         await update.message.reply_text("❌ 你没有权限使用此命令")
         return
@@ -82,12 +100,3 @@ async def admin_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_list_str = "\n".join(str(a) for a in settings.ADMINS)
 
     await update.message.reply_text(f"👑 当前管理员列表：\n{admin_list_str}")
-
-
-# =========================
-# 注册命令
-# =========================
-def register_admin_handlers(application):
-    application.add_handler(CommandHandler("admin_add", admin_add))
-    application.add_handler(CommandHandler("admin_remove", admin_remove))
-    application.add_handler(CommandHandler("admin_list", admin_list))
