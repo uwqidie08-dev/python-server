@@ -225,18 +225,18 @@ def main() -> None:
 
     register_routes(application)
 
-# 👇 加这个（解决冲突）
-asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
+    # 👇 修复冲突（必须在 main 里面）
+    asyncio.run(application.bot.delete_webhook(drop_pending_updates=True))
 
-application.run_polling(
-    allowed_updates=[
-        "message",
-        "edited_message",
-        "callback_query",
-    ],
-    drop_pending_updates=True,
-    close_loop=False,
-)
+    application.run_polling(
+        allowed_updates=[
+            "message",
+            "edited_message",
+            "callback_query",
+        ],
+        drop_pending_updates=True,
+        close_loop=False,
+    )
 
 
 if __name__ == "__main__":
